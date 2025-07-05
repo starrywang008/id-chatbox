@@ -1,54 +1,58 @@
 import streamlit as st
 from openai import OpenAI
 
-# Initialize OpenAI client
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])  # Or use environment variable
+# ✅ Use your own API key for testing (replace with your actual key)
+client = OpenAI(api_key="your-api-key-here")  # 你可以先硬编码测试用的 Key
 
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "role" not in st.session_state:
-    st.session_state.role = "Beginner"
+# --- Page setup ---
+st.set_page_config(page_title="Smart Learning Assistant", layout="wide")
+st.title("📚 Smart Learning Assistant")
+st.write("Select your role and ask anything!")
 
-# Greeting message
-with st.chat_message("assistant"):
-    st.markdown("👋 Hi! I'm your Smart Learning Assistant. Select your role below and ask me anything!")
-
-# Sidebar: Role selection
+# --- Role selection ---
 st.sidebar.title("Choose Your Role")
 role = st.sidebar.radio("I am a...", ["Beginner", "Teacher", "Grad Student"])
-st.session_state.role = role
 
-# Sidebar: Quick question buttons
-quick_questions = {
-    "Beginner": ["What is instructional design?", "How do I become an ID?", "What's ADDIE?"],
-    "Teacher": ["How can I use AI in my lessons?", "What is UDL?", "Best tools for online teaching?"],
-    "Grad Student": ["How to pick a thesis topic?", "Tips for academic writing?", "Research methods in EdTech?"]
-}
+# --- Quick question buttons ---
+st.sidebar.subheader("Quick Questions")
+if st.sidebar.button("How can I use AI in my lessons?"):
+    st.session_state.messages.append({"role": "user", "content": "How can I use AI in my lessons?"})
+if st.sidebar.button("What is UDL?"):
+    st.session_state.messages.append({"role": "user", "content": "What is UDL?"})
+if st.sidebar.button("Best tools for online teaching?"):
+    st.session_state.messages.append({"role": "user", "content": "Best tools for online teaching?"})
 
-st.sidebar.markdown("### Quick Questions")
-for q in quick_questions[role]:
-    if st.sidebar.button(q):
-        st.session_state.messages.append({"role": "user", "content": q})
+# --- Chat history state ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# Chat input
-user_input = st.chat_input("Type your question here...")
+# --- Clear Chat Button ---
+if st.sidebar.button("🗑️ Clear Chat"):
+    st.session_state.messages = []
 
-# Handle input and generate assistant response
-if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
+# --- Display message history ---
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# --- Input box ---
+user_prompt = st.chat_input("Type your question here...")
+if user_prompt:
+    st.session_state.messages.append({"role": "user", "content": user_prompt})
+    
+    with st.chat_message("user"):
+        st.markdown(user_prompt)
 
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": f"You are a helpful assistant for a {st.session_state.role}."}
-                    ] + st.session_state.messages
-                )
-                reply = response.choices[0].message.content
-                st.markdown(reply)
-                st.session_state.messages.append({"role": "assistant", "content": reply})
-            except Exception as e:
-                st.error(f"Error: {e}")
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": m["role"], "content": m["content"]}
+                    for m in st.session_state.messages
+                ]
+            )
+            assistant_reply = response.choices[0].message.content
+            st.markdown(assistant_reply)
+
+    st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
