@@ -6,13 +6,19 @@ st.set_page_config(page_title="Instructional Design Chatbot", page_icon="🎓")
 st.title("🎓 Instructional Design Career Coach Chatbot")
 
 # Welcome animation
+import time
+import streamlit as st
+
 with st.chat_message("assistant"):
+    placeholder = st.empty()  # <-- 放到 chat_message 里面
     welcome_text = "Hi there! I'm your AI career coach for Instructional Design. Ask me anything to get started! 💬"
     animated_text = ""
     for char in welcome_text:
         animated_text += char
-        st.markdown(animated_text)
-        time.sleep(0.01)
+        placeholder.markdown(animated_text)
+        time.sleep(0.02)
+
+
 
 
 # Ask user to input their own API key
