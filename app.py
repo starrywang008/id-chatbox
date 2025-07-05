@@ -31,7 +31,7 @@ role = st.sidebar.radio(
 )
 
 # Temporary API key for testing – you can replace this with your own or user input
-api_key = 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
+api_key = "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"
 client = OpenAI(api_key=api_key)
 
 
