@@ -1,80 +1,87 @@
+# This app was adapted from: https://github.com/zhaojj1014/PubMed_Pal
+# Original author: @zhaojj1014
+# Licensed under the MIT License
+# Modified for interactive learning assistant use in instructional design.
+
 import streamlit as st
 from openai import OpenAI
 
-# ✅ Use your own API key for testing (replace with your actual key)
-client = OpenAI(api_key="your-api-key-here")  # 你可以先硬编码测试用的 Key
+# ========== Sidebar: Welcome & API Input ==========
+st.sidebar.title("📚 Smart ID Career Coach")
 
-# --- Page setup ---
-st.set_page_config(page_title="Smart Learning Assistant", layout="wide")
-st.title("📚 Smart Learning Assistant")
-st.write("Select your role and ask anything!")
+st.sidebar.markdown('''
+### 🎓 Welcome!
 
-# --- Role selection ---
-st.sidebar.title("Choose Your Role")
-role = st.sidebar.radio("I am a...", ["Beginner", "Teacher", "Grad Student"])
+This is a prototype learning assistant designed to help you explore careers in instructional design (ID). Whether you're just starting out, switching careers, or already in EdTech, this tool is here to support you with quick and smart answers.
 
-# --- Quick question buttons ---
-st.sidebar.subheader("Quick Questions")
+💡 You can ask questions like:
+- What skills do I need to become an instructional designer?
+- How do I build an ID portfolio?
+- What are common tools used in corporate learning?
+---
 
-if st.sidebar.button("How can I use AI in my lessons?"):
-    st.session_state.messages.append({"role": "user", "content": "How can I use AI in my lessons?"})
-    st.session_state.submit_button = True
+*This is an early prototype—expect bugs and surprises!*
+''')
 
-if st.sidebar.button("What is UDL?"):
-    st.session_state.messages.append({"role": "user", "content": "What is UDL?"})
-    st.session_state.submit_button = True
+# Sidebar: Select role
+role = st.sidebar.radio(
+    "🎭 Select Your Role",
+    ("Beginner", "Teacher", "Grad Student"),
+    help="Choose the role that best describes you. This will customize the assistant’s tone and advice."
+)
 
-if st.sidebar.button("Best tools for online teaching?"):
-    st.session_state.messages.append({"role": "user", "content": "Best tools for online teaching?"})
-    st.session_state.submit_button = True
+# Temporary API key for testing – you can replace this with your own or user input
+api_key = "sk-xxxxx"  # ⚠️ Replace with your own for now
 
-# --- AI assistant response for button-triggered questions ---
-if st.session_state.get("submit_button", False):
-    prompt = st.session_state.messages[-1]["content"]
-    
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=st.session_state.messages
-            )
-            reply = response.choices[0].message.content
-            st.markdown(reply)
+# ========== Initialize OpenAI Client ==========
+client = OpenAI(api_key=api_key)
 
+# ========== Session State Initialization ==========
+# Define system message based on role
+if role == "Beginner":
+    system_prompt = (
+        "You are a helpful career coach who explains the basics of instructional design to someone with no prior knowledge. "
+        "Be encouraging, patient, and use simple language."
+    )
+elif role == "Teacher":
+    system_prompt = (
+        "You are an expert in helping K-12 or higher-ed teachers transition into instructional design roles. "
+        "Focus on identifying transferable skills and giving actionable steps toward building a portfolio and switching careers."
+    )
+elif role == "Grad Student":
+    system_prompt = (
+        "You are a career mentor for graduate students studying instructional design. "
+        "Offer advice on gaining real-world experience, building a strong portfolio, and navigating the job market."
+    )
+
+# Initialize chat history
+if st.session_state.get("current_role") != role:
+    st.session_state.messages = [
+        {"role": "system", "content": system_prompt}
+    ]
+    st.session_state.current_role = role
+
+
+# ========== Main Chat Interface ==========
+st.title("🧠 ID Learning Chatbox")
+
+user_input = st.chat_input("Ask me anything about learning design or ID careers...")
+
+if user_input:
+    # Append user message
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    # Call OpenAI
+    with st.spinner("Thinking..."):
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=st.session_state.messages
+        )
+
+    reply = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": reply})
-    st.session_state.submit_button = False
 
-# --- Chat history state ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# --- Clear Chat Button ---
-if st.sidebar.button("🗑️ Clear Chat"):
-    st.session_state.messages = []
-
-# --- Display message history ---
-for msg in st.session_state.messages:
+# ========== Display Message History ==========
+for msg in st.session_state.messages[1:]:  # Skip system prompt
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
-
-# --- Input box ---
-user_prompt = st.chat_input("Type your question here...")
-if user_prompt:
-    st.session_state.messages.append({"role": "user", "content": user_prompt})
-    
-    with st.chat_message("user"):
-        st.markdown(user_prompt)
-
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages
-                ]
-            )
-            assistant_reply = response.choices[0].message.content
-            st.markdown(assistant_reply)
-
-    st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
