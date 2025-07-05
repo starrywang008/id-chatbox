@@ -15,12 +15,34 @@ role = st.sidebar.radio("I am a...", ["Beginner", "Teacher", "Grad Student"])
 
 # --- Quick question buttons ---
 st.sidebar.subheader("Quick Questions")
+
 if st.sidebar.button("How can I use AI in my lessons?"):
     st.session_state.messages.append({"role": "user", "content": "How can I use AI in my lessons?"})
+    st.session_state.submit_button = True
+
 if st.sidebar.button("What is UDL?"):
     st.session_state.messages.append({"role": "user", "content": "What is UDL?"})
+    st.session_state.submit_button = True
+
 if st.sidebar.button("Best tools for online teaching?"):
     st.session_state.messages.append({"role": "user", "content": "Best tools for online teaching?"})
+    st.session_state.submit_button = True
+
+# --- AI assistant response for button-triggered questions ---
+if st.session_state.get("submit_button", False):
+    prompt = st.session_state.messages[-1]["content"]
+    
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking..."):
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=st.session_state.messages
+            )
+            reply = response.choices[0].message.content
+            st.markdown(reply)
+
+    st.session_state.messages.append({"role": "assistant", "content": reply})
+    st.session_state.submit_button = False
 
 # --- Chat history state ---
 if "messages" not in st.session_state:
