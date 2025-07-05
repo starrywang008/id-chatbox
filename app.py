@@ -1,47 +1,54 @@
 import streamlit as st
-import time
 from openai import OpenAI
 
-# Get user's API key
-api_key = st.text_input("Enter your OpenAI API key:", type="password")
-
 # Initialize OpenAI client
-if api_key:
-    client = OpenAI(api_key=api_key)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])  # Or use environment variable
 
-    # Initialize message history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# Initialize session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "role" not in st.session_state:
+    st.session_state.role = "Beginner"
 
-    # Show welcome animation
+# Greeting message
+with st.chat_message("assistant"):
+    st.markdown("👋 Hi! I'm your Smart Learning Assistant. Select your role below and ask me anything!")
+
+# Sidebar: Role selection
+st.sidebar.title("Choose Your Role")
+role = st.sidebar.radio("I am a...", ["Beginner", "Teacher", "Grad Student"])
+st.session_state.role = role
+
+# Sidebar: Quick question buttons
+quick_questions = {
+    "Beginner": ["What is instructional design?", "How do I become an ID?", "What's ADDIE?"],
+    "Teacher": ["How can I use AI in my lessons?", "What is UDL?", "Best tools for online teaching?"],
+    "Grad Student": ["How to pick a thesis topic?", "Tips for academic writing?", "Research methods in EdTech?"]
+}
+
+st.sidebar.markdown("### Quick Questions")
+for q in quick_questions[role]:
+    if st.sidebar.button(q):
+        st.session_state.messages.append({"role": "user", "content": q})
+
+# Chat input
+user_input = st.chat_input("Type your question here...")
+
+# Handle input and generate assistant response
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-        welcome_text = "Hi there! I'm your AI career coach for Instructional Design."
-        animated_text = ""
-        for char in welcome_text:
-            animated_text += char
-            placeholder.markdown(animated_text)
-            time.sleep(0.02)
-
-    # User input
-    user_input = st.chat_input("Type your question here...")
-
-    if user_input:
-        # Display user message
-        st.chat_message("user").markdown(user_input)
-
-        # Append to history
-        st.session_state.messages.append({"role": "user", "content": user_input})
-
-        # Get AI response
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
+        with st.spinner("Thinking..."):
+            try:
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
-                    messages=st.session_state.messages
+                    messages=[
+                        {"role": "system", "content": f"You are a helpful assistant for a {st.session_state.role}."}
+                    ] + st.session_state.messages
                 )
-                ai_reply = response.choices[0].message.content
-                st.markdown(ai_reply)
-
-        # Append AI response to history
-        st.session_state.messages.append({"role": "assistant", "content": ai_reply})
+                reply = response.choices[0].message.content
+                st.markdown(reply)
+                st.session_state.messages.append({"role": "assistant", "content": reply})
+            except Exception as e:
+                st.error(f"Error: {e}")
