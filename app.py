@@ -7,9 +7,13 @@ st.title("🎓 Instructional Design Career Coach Chatbot")
 
 # Welcome animation
 with st.chat_message("assistant"):
-    for word in "Hi there! I'm your AI career coach for Instructional Design. Ask me anything to get started! 💬":
-        st.write(word, end="")
-        time.sleep(0.02)
+    welcome_text = "Hi there! I'm your AI career coach for Instructional Design. Ask me anything to get started! 💬"
+    animated_text = ""
+    for char in welcome_text:
+        animated_text += char
+        st.markdown(animated_text)
+        time.sleep(0.01)
+
 
 # Ask user to input their own API key
 if "user_api_key" not in st.session_state:
