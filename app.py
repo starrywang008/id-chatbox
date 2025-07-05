@@ -31,10 +31,9 @@ role = st.sidebar.radio(
 )
 
 # Temporary API key for testing – you can replace this with your own or user input
-api_key = "sk-xxxxx"  # ⚠️ Replace with your own for now
-
-# ========== Initialize OpenAI Client ==========
+api_key = st.secrets["openai"]["api_key"]
 client = OpenAI(api_key=api_key)
+
 
 # ========== Session State Initialization ==========
 # Define system message based on role
