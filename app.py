@@ -31,8 +31,17 @@ role = st.sidebar.radio(
 )
 
 # Temporary API key for testing – you can replace this with your own or user input
-api_key = "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"
-client = OpenAI(api_key=api_key)
+from openai import OpenAI
+
+client = OpenAI(api_key="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")  # 👈你的完整 key 放这里
+
+response = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[{"role": "user", "content": "Hello, who are you?"}]
+)
+
+print(response.choices[0].message.content)
+
 
 
 # ========== Session State Initialization ==========
