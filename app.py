@@ -4,6 +4,9 @@
 # Modified for interactive learning assistant use in instructional design.
 
 import streamlit as st
+import requests
+import re
+import openai
 from openai import OpenAI
 
 # ========== Sidebar: Welcome & API Input ==========
@@ -17,7 +20,7 @@ This is a prototype learning assistant designed to help you explore careers in i
 💡 You can ask questions like:
 - What skills do I need to become an instructional designer?
 - How do I build an ID portfolio?
-- What are common tools used in corporate learning?
+- What are the common tools used in corporate learning?
 ---
 
 *This is an early prototype—expect bugs and surprises!*
@@ -32,16 +35,16 @@ role = st.sidebar.radio(
 
 # Temporary API key for testing – you can replace this with your own or user input
 from openai import OpenAI
+import streamlit as st
 
-client = OpenAI(api_key="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")  # 👈你的完整 key 放这里
+client = OpenAI(api_key=st.secrets["openai"]["api_key"])
 
 response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[{"role": "user", "content": "Hello, who are you?"}]
 )
 
-print(response.choices[0].message.content)
-
+st.write(response.choices[0].message.content)
 
 
 # ========== Session State Initialization ==========
