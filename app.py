@@ -34,14 +34,16 @@ role = st.sidebar.radio(
 )
 
 # Temporary API key for testing – you can replace this with your own or user input
-from openai import OpenAI
+import openai
 import streamlit as st
 
-client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+openai.api_key = st.secrets["openai"]["api_key"]
 
-response = client.chat.completions.create(
+response = openai.chat.completions.create(
     model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": "Hello, who are you?"}]
+    messages=[
+        {"role": "user", "content": "Hello, who are you?"}
+    ]
 )
 
 st.write(response.choices[0].message.content)
