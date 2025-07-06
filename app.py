@@ -4,97 +4,109 @@
 # Modified for interactive learning assistant use in instructional design.
 
 import streamlit as st
-import requests
-import re
 import openai
 from openai import OpenAI
 
-# ========== Sidebar: Welcome & API Input ==========
+# Function to get OpenAI response
+def get_completion(messages, model="gpt-3.5-turbo"):
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=800,
+        temperature=0.7,
+    )
+    return response.choices[0].message["content"]
+
+# Sidebar Configuration
 st.sidebar.title("📚 Smart ID Career Coach")
 
-st.sidebar.markdown('''
-### 🎓 Welcome!
+st.sidebar.write('''🎓 Welcome!
 
-This is a prototype learning assistant designed to help you explore careers in instructional design (ID). Whether you're just starting out, switching careers, or already in EdTech, this tool is here to support you with quick and smart answers.
+This is a prototype learning assistant designed to help you explore careers in instructional design (ID). Whether you're just starting out, switching careers, or already in EdTech, this tool is here to support you.
 
 💡 You can ask questions like:
 - What skills do I need to become an instructional designer?
 - How do I build an ID portfolio?
 - What are the common tools used in corporate learning?
----
 
-*This is an early prototype—expect bugs and surprises!*
-''')
+*This is an early prototype—expect bugs and surprises!*''')
 
-# Sidebar: Select role
-role = st.sidebar.radio(
-    "🎭 Select Your Role",
-    ("Beginner", "Teacher", "Grad Student"),
-    help="Choose the role that best describes you. This will customize the assistant’s tone and advice."
+st.sidebar.divider()
+
+api_key = st.sidebar.text_input(
+    "Enter your OpenAI API key:",
+    type="password",
+    placeholder="Paste your OpenAI API key here (sk-...)",
+    help="You can get your API key from https://platform.openai.com/account/api-keys."
 )
 
-# Temporary API key for testing – you can replace this with your own or user input
-import openai
-import streamlit as st
+st.sidebar.divider()
 
-openai.api_key = st.secrets["openai"]["api_key"]
+if api_key:
+    client = OpenAI(api_key=api_key)
 
-response = openai.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {"role": "user", "content": "Hello, who are you?"}
-    ]
-)
+    st.header("🎯 ID Career Coach – Your Background")
 
-st.write(response.choices[0].message.content)
+    # Collect user input
+    education = st.text_input("What is your education background?", placeholder="e.g., Master's in Educational Technology")
+    experience = st.text_input("What work experience do you have?", placeholder="e.g., 2 years teaching + 3-month ID internship")
 
-
-# ========== Session State Initialization ==========
-# Define system message based on role
-if role == "Beginner":
-    system_prompt = (
-        "You are a helpful career coach who explains the basics of instructional design to someone with no prior knowledge. "
-        "Be encouraging, patient, and use simple language."
-    )
-elif role == "Teacher":
-    system_prompt = (
-        "You are an expert in helping K-12 or higher-ed teachers transition into instructional design roles. "
-        "Focus on identifying transferable skills and giving actionable steps toward building a portfolio and switching careers."
-    )
-elif role == "Grad Student":
-    system_prompt = (
-        "You are a career mentor for graduate students studying instructional design. "
-        "Offer advice on gaining real-world experience, building a strong portfolio, and navigating the job market."
+    tools = st.multiselect(
+        "Which tools have you used? (Select all that apply)",
+        ["Articulate Rise", "Storyline", "Figma", "Canva", "ChatGPT", "Moodle", "Canvas", "Brightspace"],
+        placeholder="Choose the tools you're familiar with"
     )
 
-# Initialize chat history
-if st.session_state.get("current_role") != role:
-    st.session_state.messages = [
-        {"role": "system", "content": system_prompt}
-    ]
-    st.session_state.current_role = role
+    other_tools = st.text_input("Any other tools or skills you'd like to mention?", placeholder="e.g., Notion, Trello, GitHub")
 
+    target_sector = st.selectbox(
+        "Which industry are you aiming for as an ID?",
+        ["Higher Education", "Corporate", "K-12", "Nonprofit", "Not sure yet"]
+    )
 
-# ========== Main Chat Interface ==========
-st.title("🧠 ID Learning Chatbox")
+    job_descriptions = st.text_area(
+        "Paste 2–3 job descriptions for your dream ID roles:",
+        placeholder="Copy from LinkedIn or Indeed and paste here..."
+    )
 
-user_input = st.chat_input("Ask me anything about learning design or ID careers...")
+    generate_button = st.button("📌 Generate Career Suggestions")
 
-if user_input:
-    # Append user message
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    if generate_button:
+        with st.spinner("Analyzing your background and generating a career development plan..."):
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are an expert career coach specialized in helping international students break into the instructional design (ID) industry in North America. Your style is clear, supportive, and structured. You provide tailored roadmaps based on users’ current background and career goals. You avoid generic advice and instead give realistic, specific, and action-oriented suggestions."
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+The user is aiming for a career in **{target_sector} instructional design.
 
-    # Call OpenAI
-    with st.spinner("Thinking..."):
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=st.session_state.messages
-        )
+📄 **Job Descriptions**:
+```{job_descriptions}```
 
-    reply = response.choices[0].message.content
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+🙋‍♀️ **User's Background**:
+- 🎓 Education: {education}
+- 💼 Work experience: {experience}
+- 🧰 Tools used: {tools}
+- 🧠 Other skills: {other_tools}
 
-# ========== Display Message History ==========
-for msg in st.session_state.messages[1:]:  # Skip system prompt
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+🎯 **Your Tasks**:
+1. 🔍 **Summary**: Briefly describe the user's current position and potential.
+2. 🧭 **Gap Analysis**: Compare the user’s profile with the job descriptions above. What are the gaps in skills, tools, and experience?
+3. 🚀 **Action Plan**: Give a clear 3–6 month roadmap to become job-ready, including tool suggestions, portfolio ideas, content creation tips, and networking steps.
+
+Format using clear sections, bullet points, and simple language. Speak directly to the user (use “you”).
+"""
+                }
+            ]
+
+            response = get_completion(messages)
+
+            st.success("Career Report Generated!")
+            st.markdown("### 📘 Your Instructional Design Career Roadmap")
+            st.markdown(response)
+
+else:
+    st.text("Please enter your OpenAI API key to proceed.")
